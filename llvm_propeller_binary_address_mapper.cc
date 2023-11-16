@@ -536,7 +536,7 @@ absl::btree_set<int> BinaryAddressMapperBuilder::CalculateHotFunctions(
     // We know the address is bigger than or equal to the function address. Make
     // sure that it doesn't point beyond the last basic block.
     if (binary_address >=
-        it->Addr + it->BBEntries.back().Offset + it->BBEntries.back().Size)
+        it->Addr + it->BBRanges.front().BBEntries.back().Offset + it->BBRanges.front().BBEntries.back().Size)
       return;
     hot_functions.insert(it - bb_addr_map_.begin());
   };
@@ -552,8 +552,8 @@ void BinaryAddressMapperBuilder::DropNonSelectedFunctions(
     const absl::btree_set<int> &selected_functions) {
   for (int i = 0; i != bb_addr_map_.size(); ++i) {
     if (selected_functions.contains(i)) continue;
-    bb_addr_map_[i].BBEntries.clear();
-    bb_addr_map_[i].BBEntries.shrink_to_fit();
+    bb_addr_map_[i].BBRanges.clear();
+    bb_addr_map_[i].BBRanges.shrink_to_fit();
     symbol_info_map_.erase(i);
   }
 }
@@ -616,7 +616,7 @@ int BinaryAddressMapperBuilder::FilterDuplicateNameFunctions(
       // If the uniq-named functions have the same structure, we assume
       // they are the same and thus we keep one copy of them.
       bool same_structure = absl::c_all_of(func_indices, [&](int i) {
-        return absl::c_equal(func_addr_map.BBEntries, bb_addr_map_[i].BBEntries,
+        return absl::c_equal(func_addr_map.BBRanges.front().BBEntries, bb_addr_map_[i].BBRanges.front().BBEntries,
                              [](const llvm::object::BBAddrMap::BBEntry &e1,
                                 const llvm::object::BBAddrMap::BBEntry &e2) {
                                return e1.Offset == e2.Offset &&
@@ -709,7 +709,7 @@ std::unique_ptr<BinaryAddressMapper> BinaryAddressMapperBuilder::Build(
     const auto &function_bb_addr_map = bb_addr_map_[function_index];
     if (last_function_address.has_value())
       CHECK_GT(function_bb_addr_map.Addr, *last_function_address);
-    for (int bb_index = 0; bb_index != function_bb_addr_map.BBEntries.size();
+    for (int bb_index = 0; bb_index != function_bb_addr_map.BBRanges.front().BBEntries.size();
          ++bb_index)
       bb_handles.push_back({function_index, bb_index});
     last_function_address = function_bb_addr_map.Addr;

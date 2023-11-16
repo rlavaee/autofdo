@@ -84,8 +84,8 @@ TEST(LlvmProfileWriterTest, ReadProfile) {
 
   const auto& call_targets = indirect_call_record.getCallTargets();
   ASSERT_EQ(call_targets.size(), 2);
-  ASSERT_EQ(call_targets.lookup("_Z3fooi"), 3336);
-  ASSERT_EQ(call_targets.lookup("_Z3bari"), 8045);
+  ASSERT_EQ(call_targets.at(llvm::FunctionId{"_Z3fooi"}), 3336);
+  ASSERT_EQ(call_targets.at(llvm::FunctionId{"_Z3bari"}), 8045);
 }
 
 TEST(LlvmProfileWriterTest, ConvertProfile) {

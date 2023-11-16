@@ -183,7 +183,7 @@ class BinaryAddressMapper {
   // `bb_handle`.
   const llvm::object::BBAddrMap::BBEntry &GetBBEntry(BbHandle bb_handle) const {
     return bb_addr_map_.at(bb_handle.function_index)
-        .BBEntries.at(bb_handle.bb_index);
+        .BBRanges.front().BBEntries.at(bb_handle.bb_index);
   }
 
   uint64_t GetAddress(BbHandle bb_handle) const {

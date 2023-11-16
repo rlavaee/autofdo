@@ -33,9 +33,9 @@ namespace {
 std::vector<std::unique_ptr<CFGNode>> CreateCfgNodes(
     int function_index, const llvm::object::BBAddrMap &func_bb_addr_map) {
   std::vector<std::unique_ptr<CFGNode>> nodes;
-  for (int bb_index = 0; bb_index < func_bb_addr_map.BBEntries.size();
+  for (int bb_index = 0; bb_index < func_bb_addr_map.BBRanges.front().BBEntries.size();
        ++bb_index) {
-    const auto &bb_entry = func_bb_addr_map.BBEntries[bb_index];
+    const auto &bb_entry = func_bb_addr_map.BBRanges.front().BBEntries[bb_index];
     nodes.push_back(std::make_unique<CFGNode>(
         func_bb_addr_map.Addr + bb_entry.Offset, bb_index, bb_entry.ID,
         bb_entry.Size, bb_entry.MD, function_index));
@@ -66,7 +66,7 @@ absl::StatusOr<std::unique_ptr<ProgramCfg>> ProgramCfgBuilder::Build(
       if (res.ok()) module_name = llvm::StringRef(res->data(), res->size());
     }
 
-    CHECK(!func_bb_addr_map.BBEntries.empty());
+    CHECK(!func_bb_addr_map.BBRanges.front().BBEntries.empty());
     // Skip functions which already have a CFG created for them.
     if (cfgs_.contains(func_index)) continue;
 
@@ -79,7 +79,7 @@ absl::StatusOr<std::unique_ptr<ProgramCfg>> ProgramCfgBuilder::Build(
     // Setup mapping from Ids to nodes.
     for (const std::unique_ptr<CFGNode> &node : cfg->nodes())
       node_map.insert({node->inter_cfg_id(), node.get()});
-    CHECK_EQ(cfg->nodes().size(), func_bb_addr_map.BBEntries.size());
+    CHECK_EQ(cfg->nodes().size(), func_bb_addr_map.BBRanges.front().BBEntries.size());
     stats_->nodes_created += cfg->nodes().size();
     cfgs_.insert({func_index, std::move(cfg)});
     ++stats_->cfgs_created;
