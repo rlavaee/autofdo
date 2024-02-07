@@ -37,7 +37,7 @@ std::vector<std::unique_ptr<CFGNode>> CreateCfgNodes(
        ++bb_index) {
     const auto &bb_entry = func_bb_addr_map.BBRanges.front().BBEntries[bb_index];
     nodes.push_back(std::make_unique<CFGNode>(
-        func_bb_addr_map.Addr + bb_entry.Offset, bb_index, bb_entry.ID,
+        func_bb_addr_map.getFunctionAddress() + bb_entry.Offset, bb_index, bb_entry.ID,
         bb_entry.Size, bb_entry.MD, function_index));
   }
   return nodes;
@@ -62,7 +62,7 @@ absl::StatusOr<std::unique_ptr<ProgramCfg>> ProgramCfgBuilder::Build(
     std::optional<llvm::StringRef> module_name = std::nullopt;
     if (addr2cu) {
       absl::StatusOr<absl::string_view> res =
-          addr2cu->GetCompileUnitFileNameForCodeAddress(func_bb_addr_map.Addr);
+          addr2cu->GetCompileUnitFileNameForCodeAddress(func_bb_addr_map.getFunctionAddress());
       if (res.ok()) module_name = llvm::StringRef(res->data(), res->size());
     }
 
@@ -237,7 +237,7 @@ absl::Status ProgramCfgBuilder::CreateEdges(
     if ((!from_bb_index.has_value() ||
          binary_address_mapper_->GetBBEntry(from_bb_handle).hasReturn() ||
          to_bb_handle.function_index != from_bb_handle.function_index) &&
-        binary_address_mapper_->GetFunctionEntry(to_bb_handle).Addr !=
+        binary_address_mapper_->GetFunctionEntry(to_bb_handle).getFunctionAddress() !=
             branch.to &&  // Not a call
         // Jump to the beginning of the basicblock
         branch.to == binary_address_mapper_->GetAddress(to_bb_handle)) {
@@ -262,7 +262,7 @@ absl::Status ProgramCfgBuilder::CreateEdges(
     }
 
     CFGEdge::Kind edge_kind = CFGEdge::Kind::kBranchOrFallthough;
-    if (binary_address_mapper_->GetFunctionEntry(to_bb_handle).Addr ==
+    if (binary_address_mapper_->GetFunctionEntry(to_bb_handle).getFunctionAddress() ==
         branch.to) {
       edge_kind = CFGEdge::Kind::kCall;
     } else if (branch.to != binary_address_mapper_->GetAddress(to_bb_handle) ||

@@ -187,7 +187,7 @@ class BinaryAddressMapper {
   }
 
   uint64_t GetAddress(BbHandle bb_handle) const {
-    return GetFunctionEntry(bb_handle).Addr + GetBBEntry(bb_handle).Offset;
+    return GetFunctionEntry(bb_handle).getFunctionAddress() + GetBBEntry(bb_handle).Offset;
   }
 
   uint64_t GetEndAddress(BbHandle bb_handle) const {
@@ -199,7 +199,7 @@ class BinaryAddressMapper {
     const auto &aliases = symbol_info_map_.at(bb_handle.function_index).aliases;
     std::string func_name =
         aliases.empty()
-            ? absl::StrCat("0x", absl::Hex(GetFunctionEntry(bb_handle).Addr))
+            ? absl::StrCat("0x", absl::Hex(GetFunctionEntry(bb_handle).getFunctionAddress()))
             : aliases.front().str();
     return absl::StrCat(func_name, ":", bb_handle.bb_index);
   }

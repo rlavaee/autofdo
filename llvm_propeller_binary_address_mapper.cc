@@ -124,10 +124,10 @@ GetSymbolInfoMap(
   absl::flat_hash_set<StringRef> section_names;
   for (int function_index = 0; function_index != bb_addr_map.size();
        ++function_index) {
-    auto iter = symtab.find(bb_addr_map[function_index].Addr);
+    auto iter = symtab.find(bb_addr_map[function_index].getFunctionAddress());
     if (iter == symtab.end()) {
       LOG(WARNING) << "BB address map for function at "
-                   << absl::StrCat(absl::Hex(bb_addr_map[function_index].Addr))
+                   << absl::StrCat(absl::Hex(bb_addr_map[function_index].getFunctionAddress()))
                    << " has no associated symbol table entry!";
       continue;
     }
@@ -529,14 +529,14 @@ absl::btree_set<int> BinaryAddressMapperBuilder::CalculateHotFunctions(
     auto it =
         absl::c_upper_bound(bb_addr_map_, binary_address,
                             [](uint64_t addr, const BBAddrMap &func_entry) {
-                              return addr < func_entry.Addr;
+                              return addr < func_entry.getFunctionAddress();
                             });
     if (it == bb_addr_map_.begin()) return;
     it = std::prev(it);
     // We know the address is bigger than or equal to the function address. Make
     // sure that it doesn't point beyond the last basic block.
     if (binary_address >=
-        it->Addr + it->BBRanges.front().BBEntries.back().Offset + it->BBRanges.front().BBEntries.back().Size)
+        it->getFunctionAddress() + it->BBRanges.front().BBEntries.back().Offset + it->BBRanges.front().BBEntries.back().Size)
       return;
     hot_functions.insert(it - bb_addr_map_.begin());
   };
@@ -563,7 +563,7 @@ void BinaryAddressMapperBuilder::FilterNoNameFunctions(
   for (auto it = selected_functions.begin(); it != selected_functions.end();) {
     if (!symbol_info_map_.contains(*it)) {
       LOG(WARNING) << "Hot function at address: 0x"
-                   << absl::StrCat(absl::Hex(bb_addr_map_[*it].Addr))
+                   << absl::StrCat(absl::Hex(bb_addr_map_[*it].getFunctionAddress()))
                    << " does not have an associated symbol name.";
       it = selected_functions.erase(it);
     } else {
@@ -708,11 +708,11 @@ std::unique_ptr<BinaryAddressMapper> BinaryAddressMapperBuilder::Build(
   for (int function_index : selected_functions) {
     const auto &function_bb_addr_map = bb_addr_map_[function_index];
     if (last_function_address.has_value())
-      CHECK_GT(function_bb_addr_map.Addr, *last_function_address);
+      CHECK_GT(function_bb_addr_map.getFunctionAddress(), *last_function_address);
     for (int bb_index = 0; bb_index != function_bb_addr_map.BBRanges.front().BBEntries.size();
          ++bb_index)
       bb_handles.push_back({function_index, bb_index});
-    last_function_address = function_bb_addr_map.Addr;
+    last_function_address = function_bb_addr_map.getFunctionAddress();
   }
   return std::make_unique<BinaryAddressMapper>(
       std::move(selected_functions), std::move(bb_addr_map_),
